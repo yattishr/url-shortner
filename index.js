@@ -59,7 +59,7 @@ const createAndSaveUrl = async (shortId, origUrl, path, res) => {
   let url_obj = new urlModel({
     urlId: shortId,
     origUrl: origUrl,
-    shortUrl: path + "/" + shortId,
+    shortUrl: path + shortId,
     date: moment().format(),
   });
 
@@ -70,7 +70,7 @@ const createAndSaveUrl = async (shortId, origUrl, path, res) => {
       console.log(`the save was successful. logging data ${data}`);
       res.json({
         original_url: data.origUrl,
-        short_url: data.urlId,
+        short_url: data.shortUrl,
       });
       return data;
     }
@@ -124,15 +124,23 @@ app.get("/api/hello", function (req, res) {
 });
 
 // app.get endpoint to retrieve shortened URL
-app.get("/api/shorturl/:shortId", async (req, res) => {
-  const shortId = req.params.shortId;  
+  app.get("/:shortId", async (req, res) => {
+    const shortId = req.params.shortId;
+    const findById = await findOneByShortUrl(shortId);
+    console.log("Logging original URL: " + findById.origUrl);
+    res.redirect(findById.origUrl);
+  });
+
+// app.get endpoint for Search functionality
+app.get("/api/search/", async (req, res) => {  
+  const shortId = req.query.shortId;  
   const findById = await findOneByShortUrl(shortId);
   console.log('Logging original URL: ' + findById.origUrl);
   res.redirect(findById.origUrl);
 });
 
 // POST api/shorturl Endpoint.
-app.post("/api/shorturl/", async (req, res) => {
+  app.post("/", async (req, res) => {
   connectionStatus.then(async (status) => {
     if (status) {
       // retrieve the url from body text
@@ -156,7 +164,7 @@ app.post("/api/shorturl/", async (req, res) => {
         if (findByUrl !== null) {
           res.json({
             original_url: findByUrl.origUrl,
-            short_url: findByUrl.urlId,
+            short_url: findByUrl.shortUrl,
           });
         } else {
           // Create and Save new URL to Mongo.
